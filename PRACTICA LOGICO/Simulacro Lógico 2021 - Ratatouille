@@ -1,0 +1,125 @@
+/* Simulacro Lógico: Ratatouille 2021 */
+/* BASE DE CONOCIMIENTO */
+% rata(Nombre, DondeVive).
+rata(remy, gusteaus).
+rata(emile, bar).
+rata(django, pizzeria).
+
+% cocina(Chef, Plato, Experiencia).
+cocina(linguini, ratatouille, 3).
+cocina(linguini, sopa, 5).
+cocina(colette, salmonAsado, 9).
+cocina(horst, ensaladaRusa, 8).
+
+% trabajaEn(Restaurante, Quien).
+trabajaEn(gusteaus, linguini).
+trabajaEn(gusteaus, colette).
+trabajaEn(gusteaus, skinner).
+trabajaEn(gusteaus, horst).
+trabajaEn(cafeDes2Moulins, amelie).
+
+% 1:
+% inspeccionSatisfactoria(Restaurante).
+inspeccionSatisfactoria(Restaurante) :-
+    restaurante(Restaurante),
+    not(rata(_, Restaurante)).
+
+restaurante(R) :- trabajaEn(Restaurante, _).
+
+% 2:
+% chef(Empleado, Restaurante).
+chef(Empleado, Restaurante) :-
+    trabajaEn(Restaurante, Empleado),
+    sabeCocinar(Empleado).
+
+sabeCocinar(E) :- cocina(E, _, _).
+
+% 3:
+% chefcito(Rata).
+chefcito(Rata) :- 
+    rata(Rata, DondeVive),
+    trabajaEn(DondeVive, linguini).
+
+% 4:
+% cocinaBien(Empleado, Plato).
+cocinaBien(Empleado, Plato) :- 
+    cocina(Empleado, Plato, Experiencia),
+    Experiencia > 7.
+
+cocinaBien(remy, Plato) :- plato(Plato).
+
+plato(Plato) :- cocina(_, Plato, _).
+
+% 5:
+% encargadoDe(Empleado, Plato, Restaurante).
+encargadoDe(Empleado, Plato, Restaurante) :-
+    trabajaEn(Restaurante, Empleado),
+    cocina(Empleado, Plato, ExperienciaMaxima),
+    forall((trabajaEn(Restaurante, Otro), cocina(Otro, Plato, Experiencia), Otro \= Empleado), Experiencia < ExperienciaMaxima ).
+
+/* BASE DE CONOCIMIENTO EXTRA */
+plato(ensaladaRusa, entrada([papa, zanahoria, arvejas, huevo, mayonesa])).
+plato(bifeDeChorizo, principal(pure, 25)).
+plato(frutillasConCrema, postre(265)).
+
+% 6:
+% saludable(Plato).
+saludable(Plato) :- 
+    plato(Plato),
+    findall(Caloria, caloriasSegun(Plato, Caloria), Calorias),
+    sumlist(Calorias, Total),
+    between(0, 74, Total).
+
+caloriasSegun(entrada(Ingredientes), Calorias) :- 
+    length(Ingredientes, Total), 
+    Calorias is Total * 15.
+
+caloriasSegun(principal(Guarnicion, Coccion), Calorias) :-
+    extraSegunGuarnicion(Guarnicion, Extra),
+    Calorias is Coccion * 5 + Extra.
+
+extraSegunGuarnicion(papasFritas, 50).
+extraSegunGuarnicion(pure, 20).
+extraSegunGuarnicion(ensalada, 0).
+
+caloriasSegun(postre(Calorias), Calorias).
+
+% 7:
+% criticaPositiva(Restaurante, Critico).
+criticaPositiva(Restaurante, Critico) :-
+    restaurante(Restaurante),
+    inspeccionSatisfactoria(Restaurante),
+    criticaPositivaSegun(Restaurante, Critico).
+
+criticaPositivaSegun(Restaurante, antonEgo) :- 
+    especialistasEn(ratatouille, Restaurante).
+
+especialistasEn(Plato, Restaurante) :-
+    forall(chef(Empleado, Restaurante), cocinaBien(Plato, Empleado)).
+
+criticaPositivaSegun(Restaurante, christophe) :-
+    findall(Chef, chef(Chef, Restaurante), Chefs),
+    length(Chefs, Cantidad), 
+    Cantidad > 3.
+
+criticaPositivaSegun(Restaurante, cormillot) :-
+    todosPlatosSaludables(Restaurante),
+    todasEntradasTienenZanahoria(Restaurante).
+
+todosPlatosSaludables(Restaurante) :-
+    forall(seCocinaEn(Plato, Restaurante), saludable(Plato)).
+
+todasEntradasTienenZanahoria(Restaurante) :-
+    forall(entradaDe(Entrada, Restaurante), tieneEntrada(zanahoria, Entrada)).
+
+seCocinaEn(Plato, Restaurante) :-
+    cocina(Alguien, Plato, _),
+    trabajaEn(Restaurante, Alguien).
+
+entradaDe(Plato, Restaurante) :-
+    seCocinaEn(Plato, Restaurante),
+    plato(Plato, entrada(_)).
+
+tieneEntrada(Ingrediente, Entrada) :-
+    plato(Entrada, entrada(Ingredientes)),
+    member(Ingrediente, Ingredientes).

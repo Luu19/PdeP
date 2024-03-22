@@ -1,0 +1,75 @@
+/* Parcial Lógico: El Kioskito 2020 */
+/* BASE DE CONOCIMIENTO */
+turno(dodain, lunes, 9, 15).
+turno(dodain, miercoles, 9, 15).
+turno(dodain, viernes, 9, 15).
+turno(lucas, martes, 10, 20).
+turno(juanC, sabados, 18, 22).
+turno(juanC, domingos, 18, 22).
+turno(juanFdS, jueves, 10, 20).
+turno(juanFdS, viernes, 12, 20).
+turno(leoC, lunes, 14, 18).
+turno(leoC, miercoles, 14, 18).
+turno(martu, miercoles, 23, 24).
+
+% 1:
+turno(vale, Dias, HorarioInicio, HorarioFinal) :- turno(dodain, Dias, HorarioInicio, HorarioFinal).
+turno(vale, Dias, HorarioInicio, HorarioFinal) :- turno(juanC, Dias, HorarioInicio, HorarioFinal).
+
+% 2:
+% atiende(Persona, Dia, Hora).
+atiende(Persona, Dia, Hora) :-
+    turno(Persona, Dia, HorarioInicio, HorarioFinal),
+    between(HorarioInicio, HorarioFinal, Hora).
+
+% 3:
+% estaSola(Persona, Dia, Hora).
+estaSola(Persona, Dia, Hora) :-
+    atiende(Persona, Dia, Hora),
+    not((atiende(Otra, Dia, Hora), Otra \= Persona)).
+
+%
+estaSola2(Persona, Dia, Hora) :-
+    atiende(Persona, Dia, Hora),
+    forall((persona(Otra), Otra \= Persona), not(atiende(Otra, Dia, Hora))).
+
+persona(Persona) :- turno(Persona, _, _, _).
+
+% 4:
+% atiendenEn(Dia, Personas).
+atiendenEn(Dia, PosibilidadesDeAtencion) :-
+    turno(_, Dia, _, _),
+    findall(Persona, atiende(Persona, Dia, _), Personas),
+    list_to_set(Personas, Posibles),
+    combinar(Posibles, PosibilidadesDeAtencion).
+
+combinar([], []).
+combinar([X | Xs], [X | Ls]) :- combinar(Xs, Ls).
+combinar([_ | Xs], Ls) :- combinar(Xs, Ls).
+
+% 5:
+/* BASE DE CONOCIMIENTO EXTRA */
+/*
+Tres VENTAS:
+    -> Golosinas, se registra el valor de plata
+    -> Cigarrillos, registra marcas de cigarrillos que se venden
+    -> Bebidas, registra si son alcoholicas y la cantidad
+*/
+ventas(dodain, fecha(10, 8), [golosinas(1200), cigarrillos([jockey]), golosinas(50)]).
+ventas(dodain, fecha(12, 8), [bebidas(alcoholica, 8), bebidas(noAlcoholica, 1), golosinas(10)]).
+ventas(martu, fecha(12, 8), [golosinas(1000), cigarrillos([chesterfield, colorado, parisines])]).
+ventas(lucas, fecha(11, 8), [golosinas(600)]).
+ventas(lucas, fecha(18, 8), [bebidas(noAlcoholica, 2), cigarrillos([derby])]).
+
+% esSuertuda(Persona).
+esSuertuda(Persona) :-
+    persona(Persona),
+    forall(ventas(Persona, _, Ventas), primeraVentaImportante(Ventas)).
+
+primeraVentaImportante([Venta | _]) :-
+    esImportante(Venta).
+
+esImportante(golosinas(Monto)) :- Monto > 100.
+esImportante(cigarrillos(Todos)) :- length(Todos, Cantidad), Cantidad > 2.
+esImportante(bebidas(alcoholica, _)).
+esImportante(bebidas(_, Cantidad)) :- Cantidad > 5.

@@ -1,0 +1,124 @@
+/* Parcial Lógico: ThunderCats 2012 */
+/* BASE DE CONOCIMIENTO */
+personaje(thundercat(leonO, 5)). %nombre, fuerza
+personaje(thundercat(jaga, 0)). %es un espiritu!
+personaje(thundercat(panthro, 4)).
+personaje(thundercat(cheetara, 3)).
+personaje(thundercat(tigro, 3)).
+personaje(thundercat(grune, 4)).
+personaje(mutante(reptilio, 4)). %nombre, fuerza
+personaje(mutante(chacalo, 2)).
+personaje(mutante(buitro, 2)).
+personaje(mutante(mandrilok, 3)).
+
+personaje(lunatack(luna)). 
+personaje(lunatack(chilla)).
+personaje(momia(mummRa)). 
+personaje(momia(mummRana)).
+traidor(grune).
+traidor(chacalo).
+lider(thundercat, leonO). %faccion, lider
+lider(mutante, reptilio).
+lider(lunatack, luna).
+guia(jaga).
+
+/*
+Se pueden usar los siguientes predicados sin desarrollar:
+    sinRepetidos/2
+    select/3 -> relaciona un elemento, una lista y la misma lista sin el elemento 
+*/
+
+% 1:
+% viveEn(Personaje, Donde).
+viveEn(Personaje, Donde) :-
+    viveEnSegun(Personaje, Donde).
+
+viveEnSegun(thundercat(Nombre, _), cubilFelino) :- not(traidor(Nombre)).
+viveEnSegun(mutante(_, _), madrigera).
+viveEnSegun(momia(_), piramide).
+
+esThunderCat(thundercat(_, _)).
+esMutante(mutante(_, _)).
+esLunatack(lunatack(_)).
+
+% 2:
+% faccion(Faccion).
+faccion(Faccion) :- lider(Faccion, _).
+faccion(Faccion) :- personaje(momia(Faccion)).
+
+% 3:
+% caracteristicas(Nombre, Faccion, Fuerza).
+caracteristicas(Nombre, Faccion, Fuerza) :- 
+    nombrePersonaje(Personaje, Nombre),
+    perteneceA(Personaje, Faccion)
+    fuerzaSegun(Personaje, Fuerza).
+
+nombrePersonaje(thundercat(Nombre, _), Nombre).
+nombrePersonaje(mutante(Nombre, _), Nombre).
+nombrePersonaje(lunatack(Nombre), Nombre).
+nombrePersonaje(momia(Nombre), Nombre).
+
+fuerzaSegun(thundercat(_, Fuerza), Fuerza).
+fuerzaSegun(mutante(_, Fuerza), Fuerza).
+fuerzaSegun(momia(_), 8).
+fuerzaSegun(lunatack(_), 3).
+
+% 4:
+% esArmonico(Personajes).
+esArmonico(Personajes) :-
+    todosLosPersonajes(Personajes),
+    Personajes \= [],
+    armonico(Personajes).
+
+armonico(Personaje) :-
+     forall(member(Personaje, Personajes), traidor(Personaje)).
+armonico(Personaje) :- 
+    faccion(Faccion),
+    forall(member(Personaje, Personajes), ( perteneceA(Personaje, Faccion), not(traidor(Personaje)) ) ).
+
+perteneceA(thundercat(_, _), thundercat).
+perteneceA(mutante(_, _), mutante).
+perteneceA(lunatack(_), lunatack).
+perteneceA(momia(_), momia).
+
+% 5:
+% puedeGuiar(Guiador, LoSigue).
+puedeGuiar(NombreGuiador, NombreSeguidor) :-
+    guia(Guiador),
+    lider(_, LoSigue).
+
+puedeGuiar(NombreGuiador, NombreSeguidor) :-
+    nombrePersonaje(Guiador, NombreGuiador)
+    nombrePersonaje(LoSigue, NombreSeguidor),
+    not(guia(NombreSeguidor)),
+    esMasFuerte(Guiador, LoSigue).
+
+esMasFuerte(Fuerte, NoTanFuerte) :-
+    fuerzaSegun(Fuerte, FuerzaMayor),
+    fuerzaSegun(NoTanFuerte, FuerzaMenor),
+    FuerzaMayor > FuerzaMenor.
+
+puedeGuiar(mummRa, NombrePersonajeMalo) :- 
+    esMalo(NombrePersonajeMalo).
+
+esMalo(Nombre) :- nombrePersonaje(Personaje, Nombre), faccionesMalas(Personaje).
+esMalo(Nombre) :- traidor(Nombre).
+
+faccionesMalas(mutante(_, _)).
+faccionesMalas(lunatack(_)).
+faccionesMalas(momia(mummRana)).
+
+% 6:
+% fuerzaGuiada(Personaje, FuerzaTotal).
+fuerzaGuiada(Personaje, FuerzaTotal) :-
+    nombrePersonaje(Personaje, Nombre),
+    findall(Fuerza, fuerzaDeQuienGuia(Nombre, Fuerza). Fuerzas),
+    fuerzaSegun(Personaje, SuFuerza),
+    sumlist(Fuerzas, TotalFuerzas),
+    FuerzaTotal is SuFuerza + TotalFuerzas.
+
+fuerzaDeQuienGuia(Nombre, Fuerza) :- 
+    puedeGuiar(Nombre, Otro),
+    nombrePersonaje(Personaje, Otro),
+    fuerzaSegun(Personaje, Fuerte).
+

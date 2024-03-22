@@ -1,0 +1,97 @@
+/* Parcial Logico: Boliches */
+/* BASE DE CONOCIMIENTO */
+%quedaEn(Boliche, Localidad)
+quedaEn(pachuli, generalLasHeras).
+quedaEn(why, generalLasHeras).
+quedaEn(chaplin, generalLasHeras).
+quedaEn(masDe40, sanLuis).
+quedaEn(qma, caba).
+
+%entran(Boliche, CapacidadDePersonas)
+entran(pachuli, 500).
+entran(why, 1000).
+entran(chaplin, 700).
+entran(masDe40, 1200).
+entran(qma, 800).
+
+%sirveComida(Boliche)
+sirveComida(chaplin).
+sirveComida(qma).
+
+%esDeTipo(Boliche, Tipo)
+    %tematico(tematica)
+    %cachengue(listaDeCancionesHabituales)
+    %electronico(djDeLaCasa, horaQueEmpieza, horaQueTermina)
+esDeTipo(why, cachengue([elYYo, prrrram, biodiesel, buenComportamiento])).
+esDeTipo(masDe40, tematico(ochentoso)).
+esDeTipo(qma, electronico(djFenich, 2, 5)).
+
+% 1:
+% esPiola(Boliche).
+esPiola(Boliche) :-
+    sirveComida(Boliche),
+    requisitosDePiola(Boliche).
+
+requisitosDePiola(Boliche) :- quedaEn(Boliche, generalLasHeras).
+requisitosDePiola(Boliche) :- entran(Boliche, CantidadPersonas), CantidadPersonas > 700.
+
+% 2:
+% soloParaBailar(Boliche) :- 
+soloParaBailar(Boliche) :-
+    esBoliche(Boliche),
+    not(sirveComida(Boliche)).
+
+esBoliche(B) :- quedaEn(B, _).
+
+% 3:
+% podemosIrConEsa(Localidad).
+podemosIrConEsa(Localidad) :-
+    quedaEn(_, Localidad),
+    forall(quedaEn(Boliche, Localidad), esPiola(Boliche)).
+
+% 4:
+% puntaje(Boliche, Puntaje).
+puntaje(Boliche, Puntaje) :-
+    esDeTipo(Boliche, Tipo),
+    puntajeSegunTipo(Tipo, Puntaje).
+
+puntajeSegunTipo(tematico(Tematica), Puntaje) :- puntajeSegunTematica(Tematica, Puntaje).
+puntajeSegunTipo(electronico(_, HoraInicio, HoraFin), Puntaje) :- Puntaje is HoraInicio + HoraFin.
+puntajeSegunTipo(cachengue(CancionesHabituales), 10) :- 
+    member(biodiesel, CancionesHabituales),
+    member(buenComportamiento, CancionesHabituales).
+
+puntajeSegunTematica(ochentoso, 9).
+puntajeSegunTematica(Tematica, 7) :- Tematica \= ochentoso.
+
+% 5:
+% elMasGrande(Boliche, Localidad).
+elMasGrande(Boliche, Localidad) :-
+    quedaEn(Boliche, Localidad),
+    entran(Boliche, CapacidadMasGrande),
+    forall((quedaEn(Otro, Localidad), entran(Otro, OtraCapacidad), Otro \= Boliche), OtraCapacidad < CapacidadMasGrande).
+
+% 6:
+% puedeAbastecer(Localidad, CantidadPersonas).
+puedeAbastecer(Localidad, CantidadPersonas) :-
+    quedaEn(_, Localidad),
+    findall(Capacidad, capacidadBolicheDeLocalidad(Localidad, Capacidad), Capacidades),
+    sumlist(Capacidades, Total),
+    Total >= CantidadPersonas.
+
+capacidadBolicheDeLocalidad(Localidad, Capacidad) :-
+    quedaEn(Boliche, Localidad),
+    entran(Boliche, Capacidad).
+
+/* BASE DE CONOCIMIENTO EXTRA */
+quedaEn(trabajamosYNosDivertimos, concordia).
+entran(trabajamosYNosDivertimos, 500).
+esDeTipo(trabajamosYNosDivertimos, tematico(oficina)).
+sirveComida(trabajamosYNosDivertimos).
+
+quedaEn(elFinDelMundo, ushuaia).
+entran(elFinDelMundo, 1500).
+esDeTipo(elFinDelMundo, electronico(djLuis, 24, 6)).
+
+entran(misterio, 1000000).
+sirveComida(misterio).

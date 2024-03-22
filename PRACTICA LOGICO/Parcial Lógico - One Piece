@@ -1,0 +1,130 @@
+/* Parcial Logico: One Piece */
+/* BASE DE CONOCIMIENTO */
+% Relaciona Pirata con Tripulacion
+tripulante(luffy, sombreroDePaja).
+tripulante(zoro, sombreroDePaja).
+tripulante(nami, sombreroDePaja).
+tripulante(ussop, sombreroDePaja).
+tripulante(sanji, sombreroDePaja).
+tripulante(chopper, sombreroDePaja).
+tripulante(law, heart).
+tripulante(bepo, heart).
+tripulante(arlong, piratasDeArlong).
+tripulante(hatchan, piratasDeArlong).
+
+% Relaciona Pirata, Evento y Monto
+impactoEnRecompensa(luffy, arlongPark, 30000000).
+impactoEnRecompensa(luffy, baroqueWorks, 70000000).
+impactoEnRecompensa(luffy, eniesLobby, 200000000).
+impactoEnRecompensa(luffy, marineford, 100000000).
+impactoEnRecompensa(luffy, dressrosa, 100000000).
+
+% 1:
+% participaron(Tripulacion, OtraTripulacion, Evento).
+participaron(Tripulacion, OtraTripulacion, Evento) :-
+    participoEn(Tripulacion, Evento),
+    participoEn(OtraTripulacion, Evento),
+    Tripulacion \= OtraTripulacion,.
+
+participoEn(Tripulacion, Evento) :-
+    tripulante(Tripunlante, Tripulacion),
+    impactoEnRecompensa(Tripunlante, Evento, _).
+
+% 2:
+% destaco(Pirata, Evento).
+destaco(Pirata, Evento) :-
+    impactoEnRecompensa(Pirata, Evento, Recompensa),
+    forall((impactoEnRecompensa(Otro, Evento, Recompensa2), Otro \= Pirata), Recompensa2 < Recompensa).
+
+% 3:
+% pasoDesapercibido(Pirata, Evento).
+pasoDesapercibido(Pirata, Evento) :-
+    tripulante(Pirata, Tripulacion),
+    participoEn(Tripulacion, Evento),
+    not(tuvoImpactoEnSuRecompensa(Pirata, Tripulacion, Evento)).
+
+tuvoImpactoEnSuRecompensa(Tripulante, Tripulacion, Evento) :-
+    tripulante(Tripunlante, Tripulacion),
+    impactoEnRecompensa(Tripunlante, Evento, Recompensa),
+    impactoEnRecompensa(Tripunlante, OtroEvento, Recompensa2),
+    Evento \= OtroEvento,
+    Recompensa > Recompensa2.
+% 4:
+% recompensaTotal(Tripulacion, Recompensa).
+recompensaTotal(Tripulacion, RecompensaTotal) :-
+    esTripulacion(Tripulacion),
+    findall(Recompensa, recompesaPorUnTripulante(Tripulacion, Recompensa), Recompesas),
+    sumlist(Recompensas, RecompensaTotal).
+
+recompesaPorUnTripulante(Tripulacion, Recompensa) :-
+    tripulante(Tripulante, Tripulacion),
+    recompensaActual(Tripulante, Recompensa).
+
+recompensaActual(Tripulante, RecompensaTotal) :-
+    tripulante(Tripulante, _),
+    findall(Recompensa, impactoEnRecompensa(Tripulante, _, Recompensa), Recompensas),
+    sumlist(Recompensas, RecompensaTotal).
+
+esTripulacion(T) :- tripulante(_, T).
+
+% 5:
+% esTemible(Tripulacion).
+esTemible(Tripulacion) :-
+    esTripulacion(Tripulacion),
+    requisitosTemibles(Tripulacion).
+
+requisitosTemibles(Tripulacion) :- recompensaTotal(Tripulacion, Recompensa), Recompensa > 500000000.
+requisitosTemibles(Tripulacion) :- 
+    forall(tripulante(Tripulante, Tripulacion), esPeligroso(Tripulante)).
+
+esPeligroso(Tripulante) :-
+    recompensaActual(Tripulante, Recompensa),
+    Recompensa > 100000000.
+
+/* PARTE 2 */
+tipoFrutaDelDiablo(paramecia).
+tipoFrutaDelDiablo(zoan).
+tipoFrutaDelDiablo(logia).
+
+especieFeroz(lobo).
+especieFeroz(leopardo).
+especieFeroz(anaconda).
+
+frutaDelDiablo(gomugomu, tipo(paramecia, noPeligrosa)).
+frutaDelDiablo(barabara, tipo(paramecia, noPeligrosa)).
+frutaDelDiablo(opeope, tipo(paramecia, peligrosa)).
+frutaDelDiablo(hitohito, tipo(zoan, humano)).
+frutaDelDiablo(nekoneko, tipo(zoan, leopardo)).
+frutaDelDiablo(mokumoku, tipo(logia))
+
+esFrutaPeligrosa(Fruta) :- 
+    frutaDelDiablo(Fruta, Tipo),
+    esPeligrosaSegun(Tipo).
+
+esPeligrosaSegun(tipo(logia))
+esPeligrosaSegun(tipo(zoan, Animal)) :- especieFeroz(Animal).
+esPeligrosaSegun(tipo(paramecia, peligrosa)).
+
+comioFruta(luffy, gomugomu).
+comioFruta(buggy, barabara).
+comioFruta(law, opeope).
+comioFruta(chopper, hitohito).
+comioFruta(lucci, nekoneko).
+comioFruta(smoker, mokumoku).
+
+% 6:
+% a:
+% Se agrega otra forma en la que se considera a un pirata/ tripulante peligroso:
+esPeligroso(Tripulante) :-
+    comioFruta(Tripulante, Fruta),
+    frutaDelDiablo(Fruta, _).
+
+% 7:
+sonPiratasDelAsfalto(Tripulacion) :- 
+    esTripulacion(Tripulacion),
+    forall(tripulante(Tripulante, Tripulacion), not(puedeNadar(Tripulante)) ).
+                                                %% comioFruta(Tripulante, _)
+
+puedeNadar(Tripulante) :- 
+    tripulante(Tripulante, _),
+    not(comioFruta(Tripulante, _)).

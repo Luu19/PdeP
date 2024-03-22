@@ -1,0 +1,148 @@
+/* Parcial Logico : Minecraft 2014 */
+/* BASE DE CONOCIMIENTO */
+/* De los JUGADORES se conoce:
+    Nombre, 
+    Items,
+    Nivel de hambre (0 a 10) */
+jugador(stuart, [piedra, piedra, piedra, piedra, piedra, piedra, piedra, piedra], 3).
+jugador(tim, [madera, madera, madera, madera, madera, pan, carbon, carbon, carbon, pollo, pollo], 8).
+jugador(steve, [madera, carbon, carbon, diamante, panceta, panceta, panceta], 2).
+
+/* Se conoce de las SECCIONES DEL MAPA:
+    Nombre del lugar,
+    Jugadores que hay,
+    Nivel de Oscuridad (0 a 10) */
+lugar(playa, [stuart, tim], 2).
+lugar(mina, [steve], 8).
+lugar(bosque, [], 6).
+
+% Items comestibles
+comestible(pan).
+comestible(panceta).
+comestible(pollo).
+comestible(pescado).
+
+% 1:
+% A:
+% tieneItem(Jugador, ItemQuePosee).
+items(Jugador, Items) :- jugador(Jugador, Items, _).
+
+tieneItem(Jugador, Item) :-
+    items(Jugador, Items),
+    member(Item, Items).
+
+% B:
+% sePreocupaPorSuSalud(Jugador).
+sePreocupaPorSuSalud(Jugador) :-
+    items(Jugador, Items),
+    hayMasDeUnComestible(Items).
+
+hayMasDeUnComestible(Items) :-
+    comestible(Item1),
+    comestible(Item2),
+    member(Item1, Items),
+    member(Item2, Items),
+    Item1 \= Item2.
+
+% C:
+% cantidadDelItem(Jugador, ItemQueExiste, CantidadDeEseItem).
+existeItem(Item) :- tieneItem(_, Item).
+esJugador(J) :- jugador(J, _, _).
+
+cantidadDelItem(Jugador, Item, Cantidad) :-
+    esJugador(Jugador),
+    existeItem(Item),
+    items(Jugador, Items),
+    cuantosTiene(Items, Item, Cantidad).
+
+cuantosTiene(Jugador, Item, 0) :-
+    esJugador(Jugador),
+    not(tieneItem(Jugador, Item)).
+
+cuantosTiene(Items, Item, Cantidad) :-
+    member(Item, Items),
+    findall(Repetido, (member(Repetido, Items), esElMismo(Repetido, Item)), Repetidos),
+    length(Repetidos, Cantidad).
+
+esElMismo(Item, Item).
+
+% D:
+% tieneMasDe(Jugador, Item).
+tieneMasDe(Jugador, Item) :-
+    cantidadDelItem(Jugador, Item, CantidadMax),
+    forall((cuantosTiene(Otro, Item, OtraCant), Otro \= Jugador), OtraCant < CantidadMax).
+
+% 2:
+% A:
+% hayMostruos(Lugar).
+hayMostruos(Lugar) :-
+    lugar(Lugar, _, NivelOsucuridad),
+    between(6, 10, NivelOscuridad).
+
+% B:
+% correPeligro(Jugador).
+correPeligro(Jugador) :-
+    estaEn(Jugador, Lugar),
+    hayMostruos(Lugar).
+
+correPeligro(Jugador) :-
+    estaHambriento(Jugador),
+    comestible(Item),
+    not(tieneItem(Jugador, Item)).
+
+estaEn(Jugador, Lugar) :-
+    lugar(Lugar, Jugadores, _),
+    member(Jugador, Jugadores).
+
+estaHambriento(Jugador) :-
+    jugador(Jugador, _, NivelHambre),
+    between(0, 4, NivelHambre).
+
+% C:
+% nivelPeligrosidad(Lugar, NivelPeligrosidadLugar).
+cantidadHabitantes(Habitantes, Cantidad) :- 
+    length(Habitantes, Cantidad).
+cantidadHambrientos(Habitantes, Cantidad) :-
+    findall(Hambriento, (member(Jugador, Habitantes), estaHambriento(Jugador)), Hambrientos),
+    length(Hambrientos, Cantidad).
+
+nivelPeligrosidad(Lugar, 100) :- hayMostruos(Lugar).
+nivelPeligrosidad(Lugar, Nivel) :-
+    not(hayMostruos(Lugar)),
+    lugar(Lugar, Habitantes, _)
+    cantidadHabitantes(Habitantes, CantidadHabitantes),
+    cantidadHambrientos(Habitantes, CantidadHambrientos),
+    Nivel is (CantidadHambrientos * 100) / CantidadHabitantes.
+
+nivelPeligrosidad(Lugar, Nivel) :- 
+    lugar(Lugar, [], NivelOscuridad),
+    Nivel is NivelOscuridad * 10.
+
+% 3:
+item(horno, [ itemSimple(piedra, 8) ]).
+item(placaDeMadera, [ itemSimple(madera, 1) ]).
+item(palo, [ itemCompuesto(placaDeMadera) ]).
+item(antorcha, [ itemCompuesto(palo), itemSimple(carbon, 1) ]).
+
+% puedeConstruir(Jugador, ItemQuePuedeConstruir).
+puedeConstruir(Jugador, Item) :-
+    esJugador(Jugador),
+    item(Item, Componentes),
+    forall(member(Componente, Componentes), dispone(Jugador, Componente)).
+% Tomo a dispone como:
+    % si tiene el itemCompuesto y/ o itemSimple
+    % si no tiene el itemCompuesto, lo puede construir
+
+dispone(Jugador, itemCompuesto(Elemento)) :-
+    loTieneOLoPuedeConstruir(Jugador, Elemento).
+
+dispone(Jugador, itemSimple(Elemento, Cantidad)) :-
+    cantidadDelItem(Elemento, CantidadElemento),
+    CantidadElemento >= Cantidad.
+
+loTieneOLoPuedeConstruir(Elemento) :- tieneItem(Jugador, Elemento).
+loTieneOLoPuedeConstruir(Elemento) :-
+    esJugador(Jugador),
+    not(tieneItem(Jugador, Elemento)),
+    puedeConstruir(Jugador, Elemento).
+

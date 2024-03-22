@@ -1,0 +1,166 @@
+/* 1: */
+%% estudiante(Nombre).
+%% personalidadEstudiante(Nombre, []).
+%% tipoDeSangre(Nombre, Tipo).
+%% casaQueNoQuiere(Nombre, Casa).
+
+estudiante(harry).
+estudiante(draco).
+estudiante(hermione).
+
+tipoDeSangre(harry, mestiza).
+personalidadEstudiante(harry, [corajudo, amistoso, orgulloso, inteligente]).
+casaQueNoQuiere(harry, slytherin).
+
+tipoDeSangre(draco, pura).
+personalidadEstudiante(draco, [orgulloso, inteligente]).
+casaQueNoQuiere(draco, hufflepuff).
+
+tipoDeSangre(hermione, impura).
+personalidadEstudiante(hermione, [responsable, orgulloso, inteligente]).
+
+
+paraElegirCasa(gryffindor, coraje).
+paraElegirCasa(slytherin, orgullo).
+paraElegirCasa(slytherin, inteligencia).
+paraElegirCasa(ravenclaw, inteligencia).
+paraElegirCasa(ravenclaw, responsabilidad).
+paraElegirCasa(hufflepuff, amistoso).
+
+casa(gryffindor).
+casa(slytherin).
+casa(ravenclaw).
+casa(hufflepuff).
+
+%% 1:
+permiteEntrar(slytherin, Estudiante) :-
+    casa(Casa), 
+    estudiante(Estudiante),
+    sangrePura(Estudiante).
+
+permiteEntrar(Casa, Estudiante) :-
+    casa(Casa), 
+    estudiante(Estudiante),
+    Casa \= slytherin.
+
+sangrePura(Estudiante) :-
+    tipoDeSangre(Estudiante, pura).
+
+%% 2:
+tieneLoNecesario(Mago, Casa) :-
+    estudiante(Mago),
+    casa(Casa),
+    forall( paraElegirCasa(Casa, Caracteristica), (personalidad(Mago, Personalidad), member(Caracteristica, Personalidad))).
+
+%% 3:
+puedeQuedar(Mago, Casa) :-
+    tieneLoNecesario(Mago, Casa),
+    permiteEntrar(Casa, Mago),
+    not(casaQueNoQuiere(Mago, Casa)).
+puedeQuedar(hermione, gryffindor).
+
+%% 4:
+cadenaDeAmistades(Magos) :-
+    todosAmistosos(Magos),
+    cadenaDeCasas(Magos).
+
+todosAmistosos(Personas) :-
+    forall(member(Persona, Personas), esAmistosa(Persona)).
+
+esAmistosa(Persona) :-
+    personalidad(Persona, Caracteristicas),
+    member(amistoso, Caracteristicas).
+
+cadenaDeCasas(Magos) :-
+    forall(consecutivos(Mago1, Mago2, Magos), (puedeQuedar(Mago1, Casa), puedeQuedar(Mago2, Casa))).
+
+consecutivos(Primero, Segundo, Lista) :-
+    nth1(PosPrimero, Primero, Lista),
+    PosSegundo is PosPrimero + 1,
+    nth1(PosSegundo, Segundo, Lista).
+
+/* PARTE 2 */
+% malaAccion(Accion).
+malaAccion(andarFueraDeCama).
+malaAccion(visitar(Lugar)) :-
+    lugarProhibido(Lugar).
+
+buenaAccion(buenaAccion(_, _)).
+
+lugarProhibido(bosque).
+lugarProhibido(seccionRestringida).
+lugarProhibido(tercerPiso).
+
+restaAccionMala(visitar(bosque), 50).
+restaAccionMala(visitar(seccionRestringida), 10).
+restaAccionMala(visitar(tercerPiso), 75).
+restaAccionMala(andarFueraDeCama, 50).
+
+%%realizoAccion(Nombre, Accion).
+realizoAccion(harry, andarFueraDeCama).
+realizoAccion(hermione, visitar(tercerPiso)).
+realizoAccion(hermione, visitar(seccionRestringida)).
+realizoAccion(harry, visitar(tercerPiso)).
+realizoAccion(harry, visitar(bosque)).
+realizoAccion(draco, visitar(mazmorras)).
+realizoAccion(ron, buenaAccion(jugarAjedrezMagico, 50)).
+realizoAccion(hermione, buenaAccion(salvarAmigos, 50)).
+realizoAccion(harry, buenaAccion(ganarAVoldemort, 60)).
+
+%% esDe(Mago, CasaQuePertenece).
+esDe(hermione, gryffindor).
+esDe(ron, gryffindor).
+esDe(harry, gryffindor).
+esDe(draco, slytherin).
+esDe(luna, ravenclaw).
+
+% 1:
+% a-
+hizoAlgunaAccion(Mago) :- 
+    realizoAccion(Mago, _).
+
+hizoAlgoMalo(Mago) :-
+    realizoAccion(Mago, Accion),
+    malaAccion(Accion).
+
+esBuenAlumno(Mago) :-
+    hizoAlgunaAccion(Mago),
+    not(hizoAlgoMalo(Mago)).
+
+% b-
+esRecurrente(Accion) :-
+    realizoAccion(Mago, Accion),
+    realizoAccion(Mago2, Accion),
+    Mago \= Mago2.
+
+% 2:
+puntajeTotal(Casa, PuntajeTotal) :-
+    casa(Casa),
+    findall(Puntaje, (esDe(Miembro, Casa), puntajeMiembro(Miembro, Puntaje)) , Puntajes),
+    sumlist(Puntajes, PuntajeTotal).
+
+puntajeMiembro(Miembro, Puntaje) :-
+    estudiante(Miembro),
+    findall(Punto, (realizoAccion(Miembro, Accion), puntosQueGenera(Accion, Punto)), Puntos),
+    sumlist(Puntos, Puntaje).
+
+puntosQueGenera(buenaAccion(_, Puntos), Punto).
+puntosQueGenera(Accion, Punto)  :-
+    malaAccion(Accion),
+    restaAccionMala(Accion, Resta),
+    Punto is Resta * (-1).
+
+% 3:
+casaGanadora(Casa) :-
+    casa(Casa),
+    forall((puntajeTotal(Casa, P1), puntajeTotal(Casa2, P2), Casa \=Casa2), P2 < P1).
+
+% 4:
+% respondioPregunta(Pregunta, Dificultad, Profesor).
+realizoAccion(hermione, respondioPregunta(lugarBezoar, 20, snape)).
+
+/* Modificaciones */
+puntosQueGenera(respondioPregunta(_, Dificultad, snape), Punto) :-
+    Punto is Dificultad / 2.
+puntosQueGenera(respondioPregunta(_, Punto, Profesor), Punto) :-
+    Profesor \= snape.

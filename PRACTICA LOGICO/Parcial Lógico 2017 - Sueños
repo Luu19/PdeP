@@ -1,0 +1,97 @@
+/* Parcial Lógico: Sueños 2017 */
+% 1:
+/* BASE DE CONOCIMIENTO */
+persona(gabriel).
+persona(macarena).
+persona(juan).
+persona(diego).
+
+cree(gabriel, campanita).
+cree(gabriel, magoDeOz).
+cree(gabriel, cavenaghi).
+cree(juan, conejoDePascua).
+cree(macarena, reyesMagos).
+cree(macarena, magoCapria).
+cree(macarena, campanita).
+
+/*
+Se conocen tres tipos de SUEÑOS:
+    1. ser cantante y vender X cantidad de discos
+    2. ser futbolista y jugar en algun equipo
+    3. ganar la loteria apostando en una serie de numeros
+*/
+sueño(gabriel, ganarLoteria([5, 9])).
+sueño(gabriel, serFutbolista(arsenal)).
+sueño(juan, serCantante(100000)).
+sueño(macarena, serCantante(10000)).
+
+% 2:
+% esAmbiciosa(Persona).
+esAmbiciosa(Persona) :-
+    dificultadDeSueños(Persona, Dificultad),
+    Dificultad > 20.
+
+dificultadDeSueños(Persona, Dificultad) :- 
+    persona(Persona),
+    findall(DificultadSueño, dificultadSueño(Persona, DificultadSueño), Dificultades),
+    sumlist(Dificultades, Dificultad).
+
+dificultadSueño(Persona, Dificultad) :-
+    sueño(Persona, Sueño),
+    dificultadSegunSueño(Sueño, Dificultad).
+
+dificultadSegunSueño(serCantante(Venta), 6) :- Venta > 500000.
+dificultadSegunSueño(serCantante(Venta), 4) :- Venta =< 500000.
+dificultadSegunSueño(ganarLoteria(Numeros), Dificultad) :-
+    length(Numeros, Cantidad),
+    Dificultad is Cantidad * 10.
+dificultadSegunSueño(serFutbolista(Equipo), 3) :- equipoChico(Equipo).
+dificultadSegunSueño(serFutbolista(Equipo), 16) :- not(equipoChico(Equipo)).
+
+equipoChico(arsenal).
+equipoChico(aldosivi).
+
+% 3:
+% tieneQuimica(Personaje, Persona).
+tieneQuimica(Personaje, Persona) :-
+    cree(Persona, Personaje),
+    tieneQuimicaSegun(Persona, Personaje).
+
+tieneQuimicaSegun(Persona, campanita) :-
+    dificultadSueño(Persona, Dificultad),
+    between(0, 5, Dificultad).
+
+tieneQuimicaSegun(Persona, Personaje) :- 
+    Personaje \= campanita,
+    not(esAmbiciosa(Persona)),
+    forall(sueño(Persona, Sueño), esPuro(Sueño)).
+
+esPuro(serFutbolista(_)).
+esPuro(serCantante(Venta)) :- Venta < 200000.
+
+% 4:
+/* BASE DE CONOCIMIENTO EXTRA */
+amigo(campanita, reyesMagos).
+amigo(campanita, conejoDePascua).
+amigo(conejoDePascua, cavenaghi).
+% ...
+
+amigos(Uno, Otro) :- amigo(Uno, Otro).
+amigos(Uno, Otro) :- 
+    amigo(Uno, OtroMas),
+    amigos(OtroMas, Otro).
+
+% puedeAlegrar(Personaje, Persona).
+puedeAlegrar(Personaje, Persona) :-
+   tieneAlgunSueño(Persona),
+   tieneQuimica(Personaje, Persona),
+   puedeAlegrarSegun(Personaje).
+
+puedeAlegrarSegun(Personaje) :- not(estaEnfermo(Personaje)).
+puedeAlegrarSegun(Personaje) :- 
+    amigos(Personaje, Otro),
+    not(estaEnfermo(Otro)).
+
+estaEnfermo(campanita).
+estaEnfermo(reyesMagos).
+estaEnfermo(conejoDePascua).

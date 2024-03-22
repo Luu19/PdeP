@@ -1,0 +1,140 @@
+/* Parcial Logico: Hearthstone 2016 */
+
+/*
+De cada JUGADOR se conoce:
+    Nombre
+    Mazo de cartas
+    Puntos de vida
+    Puntos de mana
+    Cartas en Mano
+    Cartas de criaturas en campo
+
+De cada CARTA se conoce:
+    Nombre
+    --> De criatura
+    Danio (de un ataque)
+    Vida
+    Costo de mana
+    --> De hechizo
+    Efecto de cura o danio cantidad de puntos de vida
+    Costo de mana
+*/
+
+/* FUNCTORES */
+% jugadores
+jugador(Nombre, PuntosVida, PuntosMana,
+CartasMazo, CartasMano, CartasCampo)
+% cartas
+criatura(Nombre, PuntosDanio, PuntosVida, CostoMana)
+hechizo(Nombre, FunctorEfecto, CostoMana)
+% efectos
+danio(CantidadDanio)
+cura(CantidadCura)
+
+% 1:
+% tieneCarta(Jugador, CartaQuePuedeTener).
+tieneCarta(NombreJugador, Carta) :-
+    nombre(Jugador, NombreJugador),
+    lePertenece(Carta, Jugador).
+
+lePertenece(Carta, Jugador) :- estaEn(Jugador, Cartas), member(Carta, Cartas).
+
+estaEn(Jugador, Cartas) :- cartasMazo(Jugador, Cartas).
+estaEn(Jugador, Cartas) :- cartasMano(Jugador, Cartas).
+estaEn(Jugador, Cartas) :- cartasCampo(Jugador, Cartas).
+
+% 2:
+% esGuerrero(NombreJugador).
+esJugador(jugador(_, _, _, _, _, _)).
+
+esGuerrero(Nombre) :-
+    esJugador(Nombre),
+    forall(tieneCarta(Nombre, Carta), esCriatura(Carta)).
+
+esCriatura(criatura(_, _, _, _)). 
+
+% 3:
+empezarTurno(jugador(Nombre, PuntosVida, PuntosMana, CartasMazo, CartasMano, CartasCampo), jugador(Nombre, PuntosVida, NuevoMana, CartasMazo, CartasActualizadas, CartasCampo)) :-
+    primeraCartaMazo(CartasMazo, Carta),
+    cartasEnMano(Carta, CartasMano, CartasActualizadas),
+    aumentaMana(PuntosMana, NuevoMana, 1),
+    cartasMano(Jugador2, Cartas).
+
+primeraCartaMazo(CartasMazo, Carta) :-
+    nth1(1, CartasMazo, Carta).
+
+cartasEnMano(Carta, CartasEnMano, [Carta|CartasEnMano]).
+
+aumentaMana(PuntosMana, NuevoMana, Aumento) :-
+    NuevoMana is PuntosMana + Aumento.
+
+% 4:
+% a-
+puedeJugarCarta(Jugador, Carta) :-
+    mana(Jugador, ManaJugador),
+    mana(Carta, ManaCarta),
+    ManaJugador >= ManaCarta.
+
+% b-
+cartasProximoTurno(Jugador, Cartas) :-
+    terminoTurno(Jugador, Jugador2),
+    esJugador(Jugador2),
+    findall(Carta, (estaEnMano(Jugador2, Carta), puedeJugarCarta(Jugador2, Carta)) , Cartas).
+
+estaEnMano(Jugador, Carta) :-
+    cartasMano(Jugador, Cartas),
+    member(Carta, Cartas).
+
+% 5:
+posiblesJugadas(Jugador, Jugadas) :-
+    cartasProximoTurno(Jugador, Cartas),
+    manaJugador(Jugador, Mana),
+    puedeJugarAlMismoTiempo(Cartas, Mana, Jugadas).
+
+puedeJugarAlMismoTiempo([], _, []).
+puedeJugarAlMismoTiempo([Carta|Cartas], ManaJugador, [Carta|Posibles]) :- 
+    puedeJugarCarta(Jugador, Carta),
+    mana(Carta, ManaCarta),
+    ManaRestante is ManaJugador - ManaCarta,
+    puedeJugarAlMismoTiempo(Cartas, ManaRestante, Posibles).
+puedeJugarAlMismoTiempo([_|Cartas], ManaJugador, Posibles) :-
+    puedeJugarAlMismoTiempo(Cartas, ManaJugador, Posibles).
+
+manaJugador(jugador(_,_, Mana,_,_,_), Mana).
+
+% 6:
+cartaConMasDanio(Jugador, CartaPoderosa) :- 
+    esJugador(Jugador),
+    tieneCarta(Jugador, CartaPoderosa),
+    danio(CartaPoderosa, DanioMayor),
+    forall(tieneCarta(Jugador, Carta), (danio(Carta, D), D < DanioMayor)).
+
+% 7:
+% a-
+jugarContra(Carta, JugadorAntes, JugadorDespues) :-
+    daniaJugador(Carta, JugadorAntes, JugadorDespues).
+
+daniaJugador(Carta, jugador(_, PuntosVidaAntes, _,_, _, _), jugador(_, PuntosVidaDespues, _,_, _, _)) :-
+    danio(Carta, Danio),
+    PuntosVidaDespues is PuntosVidaAntes - Danio.
+
+% b-
+jugar(Carta, Jugador, JugadorDespues) :-
+    cuestaMana(Carta, Jugador, JugadorDespues).
+
+jugar(Carta, Jugador, JugadorDespues) :-
+    aumentaVida(Carta, Jugador, JugadorDespues).
+
+cuestaMana(Carta, jugador(_, _, PuntosManaAntes,_, _, _), jugador(_, _, PuntosManaDespues,_, _, _)) :-
+    manaCarta(Carta, ManaCarta),
+    PuntosManaDespues is PuntosManaAntes - ManaCarta.
+
+manaCarta(criatura(_,_,_,Mana), Mana).
+manaCarta(hechizo(_,_,Mana), Mana).
+
+aumentaVida(Carta, jugador(_, PuntosVidaAntes, _,_, _, _), jugador(_, PuntosVidaDespues, _,_, _, _)) :-
+    cura(Carta, CantidadCura),
+    PuntosVidaDespues is PuntosVidaAntes + CantidadCura.
+
+cura(hechizo(_, cura(CantidadCura), _), CantidadCura).
+

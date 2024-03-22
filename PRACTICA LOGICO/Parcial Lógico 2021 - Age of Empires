@@ -1,0 +1,243 @@
+% …jugador(Nombre, Rating, Civilizacion).
+jugador(juli, 2200, jemeres).
+jugador(aleP, 1600, mongoles).
+jugador(feli, 500000, persas).
+jugador(aleC, 1723, otomanos).
+jugador(ger, 1729, ramanujanos).
+jugador(juan, 1515, britones).
+jugador(marti, 1342, argentinos).
+% … y muchos más también
+
+% …tiene(Nombre, QueTiene).
+tiene(aleP, unidad(samurai, 199)).
+tiene(aleP, unidad(espadachin, 10)).
+tiene(aleP, unidad(granjero, 10)).
+tiene(aleP, recurso(800, 300, 100)). %%recurso(Madera, Alimento, Oro)
+tiene(aleP, edificio(casa, 40)).
+tiene(aleP, edificio(castillo, 1)).
+tiene(juan, unidad(carreta, 10)).
+% … y muchos más también
+
+% militar(Tipo, costo(Madera, Alimento, Oro), Categoria).
+militar(espadachin, costo(0, 60, 20), infanteria).
+militar(arquero, costo(25, 0, 45), arqueria).
+militar(mangudai, costo(55, 0, 65), caballeria).
+militar(samurai, costo(0, 60, 30), unica).
+militar(keshik, costo(0, 80, 50), unica).
+militar(tarcanos, costo(0, 60, 60), unica).
+militar(alabardero, costo(25, 35, 0), piquero).
+% … y muchos más tipos pertenecientes a estas categorías.
+
+% aldeano(Tipo, produce(Madera, Alimento, Oro)).
+aldeano(lenador, produce(23, 0, 0)).
+aldeano(granjero, produce(0, 32, 0)).
+aldeano(minero, produce(0, 0, 23)).
+aldeano(cazador, produce(0, 25, 0)).
+aldeano(pescador, produce(0, 23, 0)).
+aldeano(alquimista, produce(0, 0, 25)).
+% … y muchos más también
+
+% edificio(Edificio, costo(Madera, Alimento, Oro)).
+edificio(casa, costo(30, 0, 0)).
+edificio(granja, costo(0, 60, 0)).
+edificio(herreria, costo(175, 0, 0)).
+edificio(castillo, costo(650, 0, 300)).
+edificio(maravillaMartinez, costo(10000, 10000, 10000)).
+% … y muchos más también
+
+%% PUNTO 1 : 
+% esUnAfano(Jugador1, Jugador2).
+esUnAfano(Jugador1, Jugador2) :-
+    jugador(Jugador1, Rating0, _),
+    jugador(Jugador2, Rating1, _),
+    Resta is Rating0 - Rating1,
+    abs(Resta, Afano),
+    Afano > 500.
+
+%% PUNTO 2 :
+% esEfectivo(Tipo0, Tipo1).
+esEfectivo(Tipo0, Tipo1) :- 
+    militar(Tipo0, _, Categoria0),
+    militar(Tipo1, _, Categoria1),
+    ganaSegunCategoria(Categoria0, Categoria1).
+
+esEfectivo(samurai, Tipo1) :-
+    militar(Tipo1, _, unica).
+
+ganaSegunCategoria(caballeria, arqueria).
+ganaSegunCategoria(arqueria, infanteria).
+ganaSegunCategoria(infanteria, piquero).
+ganaSegunCategoria(piquero, caballeria).
+
+%% PUNTO 3 :
+/* Definir el predicado alarico/1 que se cumple para un jugador si solo tiene unidades de infanteria. */
+% alarico(Jugador).
+alarico(Jugador) :- 
+    jugador(Jugador, _ , _),
+    tieneSoloUnidadesDe(Jugador, infanteria).
+
+%% PUNTO 4 :
+/* Definir el predicado leonidas/1, que se cumple para un jugador si solo tiene unidades de piqueros. */
+% leonidas(Jugador).
+leonidas(Jugador) :-
+    jugador(Jugador, _, _),
+    tieneSoloUnidadesDe(Jugador, piquero).
+
+tieneSoloUnidadesDe(Jugador, Categoria) :-
+    forall(tiene(Jugador, unidad(Tipo, _)), militar(Tipo, Categoria)).
+
+%% PUNTO 5 :
+/* Definir el predicado nomada/1, que se cumple para un jugador si no tiene casas. */
+% nomada(Jugador).
+nomada(Jugador) :-
+    jugador(Jugador, _, _),
+    not(tiene(Jugador, edificio(casa, _))).
+
+%% PUNTO 6 :
+/* Definir el predicado cuantoCuesta/2, que relaciona una unidad o edificio con su costo. De las unidades
+militares y de los edificios conocemos sus costos. Los aldeanos cuestan 50 unidades de alimento. Las
+carretas y urnas mercantes cuestan 100 unidades de madera y 50 de oro cada una. */
+% cuantoCuesta(Unidad, Costo).
+
+%% costo(Madera, Alimento, Oro)
+cuantoCuesta(Unidad, Costo) :-
+    militar(Unidad, Costo, _).
+
+cuantoCuesta(Edificio, Costo) :-
+    edificio(Edificio, Costo).
+
+cuantoCuesta(Tipo, costo(0, 50, 0)) :-
+    esAldeano(Tipo).
+
+cuantoCuesta(Tipo, costo(100, 0, 50)) :-
+    esCarretaOUrna(Tipo).
+
+esCarretaOUrna(carreta).
+esCarretaOUrna(urnaMercante).
+
+esAldeano(Tipo) :-
+    aldeano(Tipo, _).
+
+%% PUNTO 7 :
+/* Definir el predicado produccion/2, que relaciona una unidad con su produccion de recursos por minuto.
+De los aldeanos, segun su profesion, se conoce su produccion. Las carretas y urnas mercantes producen
+32 unidades de oro por minuto. Las unidades militares no producen ningun recurso, salvo los Keshiks, que
+producen 10 de oro por minuto. */
+
+%produccion(Unidad, ProduccionDeRecursosXMinuto).
+produccion(Unidad, ProduccionDeRecursosXMinuto) :-
+    aldeano(Unidad, ProduccionDeRecursosXMinuto).
+
+produccion(Unidad, produce(0, 0, 32)) :-
+    esCarretaOUrna(Unidad).
+
+produccion(Tipo, produce(0, 0, Oro)) :-
+    militar(Tipo, _, _),
+    produccionDeOro(Tipo, Oro).
+
+produccionDeOro(_, 0).
+produccionDeOro(keshik, 10).
+
+%% PUNTO 8 :
+/* Definir el predicado produccionTotal/3 que relaciona a un jugador con su produccion total por minuto de
+cierto recurso, que se calcula como la suma de la producciOn total de todas sus unidades de ese recurso. */
+
+%produccionTotal(Jugador, Recurso, ProdTotal).
+
+produccionTotal(Jugador, Recurso, ProdTotal) :- 
+    jugador(Jugador, _, _),
+    findall(Produccion, produccionDeRecurso(Jugador, Recurso, Produccion), Producciones),
+    sumlist(Producciones, ProdTotal).
+
+produccionDeRecurso(Jugador, Recurso, Produccion) :-
+    tiene(Jugador, unidad(Tipo, Cuantos)),
+    produccion(Tipo, ProduccionDeRecursosXMinuto),
+    tipoDeProduccion(ProduccionDeRecursosXMinuto, Recurso, Total),
+    Produccion is Total * Cuantos.
+
+tipoDeProduccion(produce(Madera, _, _), madera, Madera).
+tipoDeProduccion(produce(_, Alimento,_), alimento, Alimento).
+tipoDeProduccion(produce(_ , _, Oro), oro, Oro).
+
+%% PUNTO 9 :
+/*  Definir el predicado estaPeleado/2 que se cumple para dos jugadores cuando no es un afano para
+ninguno, tienen la misma cantidad de unidades y la diferencia de valor entre su producciOn total de
+recursos por minuto es menor a 100 . Pero cuidado! No todos los recursos valen lo mismo: el oro vale
+cinco veces su cantidad; la madera, tres veces; y los alimentos, dos veces. */
+
+esJugador(J) :- jugador(J, _, _).
+
+%estaPeleado(Jugador0, Jugador1).
+estaPeleado(Jugador0, Jugador1) :-
+    esJugador(Jugador0), esJugador(Jugador1),
+    not(esUnAfano(Jugador0, Jugador1)),
+    cantidadDeUnidades(Jugador0, Cantidad),
+    cantidadDeUnidades(Jugador1, Cantidad),
+    produccionTotalDeRecursos(Jugador0, ProdTotal0),
+    produccionTotalDeRecursos(Jugador1, ProdTotal1),
+    Dif is ProdTotal0 - ProdTotal1, 
+    abs(Dif, Diferencia),
+    Diferencia < 100.
+
+cantidadDeUnidades(Jugador, Cantidad) :-
+    findall(Cuanto, (tiene(Jugador, Unidad), esUnidad(Unidad, Cuanto)), Cuantos),
+    sumlist(Cuantos, Cantidad).
+
+produccionTotalDeRecursos(Jugador, ProdTotal) :-
+    produccionTotal(Jugador, oro, ProduccionDeOro),
+    produccionTotal(Jugador, madera, ProduccionDeMadera),
+    produccionTotal(Jugador, alimento, ProduccionDeAlimento),
+    ProdTotal is (ProduccionDeOro * 5) + (ProduccionDeMadera * 3) + (ProduccionDeAlimento * 2).
+
+esUnidad(unidad(_, Cuanto), Cuanto).
+
+%% PUNTO 10 :
+/* 
+Definir el predicado avanzaA/2 que relaciona un jugador y una edad si este puede avanzar a ella:
+a) Siempre se puede avanzar a la edad media.
+b) Puede avanzar a edad feudal si tiene al menos 500 unidades de alimento y una casa.
+c) Puede avanzar a edad de los castillos si tiene al menos 800 unidades de alimento y 200 de oro.
+Tambien es necesaria una herreria, un establo o una galeria de tiro.
+d) Puede avanzar a edad imperial con 1000 unidades de alimento, 800 de oro, un castillo y una
+universidad.
+*/
+% avanzaA(Jugador, Edad).
+
+avanzaA(Jugador, Edad) :- 
+    esJugador(Jugador),
+    avanza(Jugador, Edad).
+
+avanza(_, edadMedia).
+
+avanza(Jugador, edadFeudal) :-
+    cumpleUnidadesAlimento(Jugador, 500),
+    tieneEdificio(Jugador, casa).
+
+avanza(Jugador, edadDeCastillos) :-
+    cumpleUnidadesAlimento(Jugador, 800),
+    cumpleUnidadesOro(Jugador, 200),
+    edificioEdadCastillo(Tipo),
+    tieneEdificio(Jugador, Tipo).
+
+edificioEdadCastillo(herreria).
+edificioEdadCastillo(establo).
+edificioEdadCastillo(galeriaDeTiro).
+
+avanza(Jugador, edadImperial) :-
+    cumpleUnidadesAlimento(Jugador, 1000),
+    cumpleUnidadesOro(Jugador. 800),
+    edificioEdadImperial(Tipo),
+    tieneEdificio(Jugador, Tipo).
+
+edificioEdadImperial(castillo).
+edificioEdadImperial(universidad).
+
+cumpleUnidadesAlimento(Jugador, Unidades) :-
+    produccionTotal(Jugador, alimento, Total),
+    Total >= Unidades,
+
+cumpleUnidadesOro(Jugador, Unidades) :-
+    produccionTotal(Jugador, oro, Unidades).
+
+tieneEdificio(Jugador, Tipo) :-
+    tiene(Jugador, edificio(Tipo, 1)).

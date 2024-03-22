@@ -1,0 +1,146 @@
+/* Parcial Logico: El Karate */
+
+/* BASE DE CONOCIMIENTO */
+%alumnoDe(Maestro, Alumno)
+alumnoDe(miyagui, sara).
+alumnoDe(miyagui, bobby).
+alumnoDe(miyagui, sofia).
+alumnoDe(chunLi, guidan).
+
+% destreza(alumno, velocidad, [habilidades]).
+% Habilidades : 
+/* patadaRecta(potencia, distancia), patadaDeGiro(potencia, punteria, distancia),
+patadaVoladora(potencia, distancia, altura, punteria), 
+codazo(potencia),
+golpeRecto(distancia, potencia).*/
+
+destreza(sofia, 80, [golpeRecto(40, 3),codazo(20)]).
+destreza(sara, 70, [patadaRecta(80, 2), patadaDeGiro(90, 95, 2), golpeRecto(1, 90)]).
+destreza(bobby, 80, [patadaVoladora(100, 3, 2, 90), patadaDeGiro(50, 20, 1)]).
+destreza(guidan, 70, [patadaRecta(60, 1), patadaVoladora(100, 3, 2, 90), patadaDeGiro( 70, 80 1)]).
+
+%categoria(Alumno, Cinturones)
+categoria(sofia, [blanco]).
+categoria(sara, [blanco, amarillo, naranja, rojo, verde, azul, violeta, marron, negro]).
+categoria(bobby, [blanco, amarillo, naranja, rojo, verde, azul, violeta, marron, negro]).
+categoria(guidan, [blanco, amarillo, naranja]).
+
+% 1:
+% esBueno(Alumno).
+esBueno(Alumno) :- sabeDosPatadasDistintas(Alumno).
+esBueno(Alumno) :- golpeRectoVelocidadMedia(Alumno).
+
+sabeDosPatadasDistintas(Alumno) :-
+    destreza(Alumno, _, Habilidades),
+    member(Patada, Habilidades),
+    member(Patada2, Habilidades),
+    esPatada(Patada2), esPatada(Patada),
+    Patada \= Patada2.
+
+golpeRectoVelocidadMedia(Alumno) :-
+    destreza(Alumno, Velocidad, Habilidades),
+    member(GolpeRecto, Habilidades),
+    esGolpeRecto(GolpeRecto),
+    between(80, 50, Velocidad).
+
+esGolpeRecto(golpeRecto(_, _)).
+esPatada(patadaVoladora(_, _, _, _)).
+esPatada(patadaRecta(_, _)).
+esPatada(patadaDeGiro(_, _, _)).
+
+% 2:
+% esAptoParaTorneo(Alumno).
+esAptoParaTorneo(Alumno) :-
+    esBueno(Alumno),
+    tieneCinturon(Alumno, verde).
+
+tieneCinturon(Alumno, Color) :-
+    categoria(Alumno, Cinturones),
+    member(Color, Cinturones).
+
+% 3:
+alumno(A) :- destreza(A, _).
+
+% totalPotencia(Alumno, PotenciaTotalDeTodasHabilidades).
+totalPotencia(Alumno, PotenciaTotal) :-
+    alumno(Alumno),
+    findall(Potencia, (habilidadesAlumno(Alumno, Habilidades), member(Habilidad, Habilidades), potenciaHabilidad(Habilidad, Potencia)), Potencias),
+    sumlist(Potencias, PotenciaTotal).
+
+habilidadesAlumno(Alumno, Habilidades) :-
+    destreza(Alumno, _, Habilidades).
+
+potenciaHabilidad(patadaRecta(Potencia, _), Potencia).
+potenciaHabilidad(patadaDeGiro(potencia, _, _), Potencia).
+potenciaHabilidad(patadaVoladora(Potencia, _, _, _), Potencia).
+potenciaHabilidad(codazo(Potencia), Potencia).
+potenciaHabilidad(golpeRecto(_, Potencia), Potencia).
+
+% 4:
+% alumnoConMayorPotencia(Alumno).
+alumnoConMayorPotencia(Alumno) :-
+    totalPotencia(Alumno, PotenciaMaxima),
+    forall(totalPotencia(_, Potencia), Potencia < PotenciaMaxima).
+
+% 5:
+% sinPatadas(Alumno).
+sinPatadas(Alumno) :-
+    alumno(Alumno),
+    not(sabePatadas(Alumno)).
+
+sabePatadas(Alumno) :-
+    destreza(Alumno, _, Habilidades),
+    member(Patada, Habilidades),
+    esPatada(Patada).
+
+% 6:
+% soloSabePatadas(Alumno).
+soloSabePatadas(Alumno) :-
+    alumno(Alumno),
+    habilidadesAlumno(Alumno, Habilidades)
+    forall(member(Habilidad, Habilidades), esPatada(Habilidad)).
+
+/* Torneos: */
+% 7:
+% potenciaFinalistas(ListaAlumnos).
+potenciaFinalistas(Alumnos) :- 
+    forall(member(Alumno, Alumnos), esSemifinalista(Alumno)).
+
+esSemifinalista(Alumno) :- esAptoParaTorneo(Alumno).
+esSemifinalista(Alumno) :- suMaestroTieneMuchosAlumnos(Alumno).
+esSemifinalista(Alumno) :- tieneBuenEstilo(Alumno).
+
+suMaestroTieneMuchosAlumnos(Alumno) :-
+    alumnoDe(Maestro, Alumno),
+    cantidadAlumnos(Maestro, Cantidad),
+    Cantidad > 1.
+
+cantidadAlumnos(Maestro, Cantidad) :-
+    alumnoDe(Maestro, _),
+    findall(Alumno, alumnoDe(Maestro, Alumno), Alumnos),
+    length(Alumnos, Cantidad).
+
+tieneBuenEstilo(Alumno) :-
+    habilidadesAlumno(Alumno, Habilidades),
+    member(Habilidad, Habilidades),
+    requisitoEstilo(Habilidad).
+
+requisitoEstilo(Habilidad) :- potenciaHabilidad(Habilidad, 100).
+requisitoEstilo(Habilidad) :- punteriaHabilidad(Habilidad, 90).
+
+punteriaHabilidad(patadaDeGiro(_, Punteria, _) , Punteria).
+punteriaHabilidad(patadaVoladora(_, _, _, Punteria) , Punteria).
+
+% 8:
+% semifinalista(ListaAlumnos). --PREGUNTAR A FEDE
+semifinalista(Alumnos) :-
+    findall(Alumno, alumno(Alumno), PosiblesSemifinalistas),
+    posibles(PosiblesSemifinalistas, Alumnos),
+    length(Alumnos, 4).
+
+posibles([Alumno|Alumnos], [Alumno | Semifinalistas]) :-
+    esSemifinalista(Alumno),
+    posibles(Alumnos, Semifinalistas).
+
+posibles([_|Alumnos], Semifinalistas) :-
+    posibles(Alumnos, Semifinalistas).

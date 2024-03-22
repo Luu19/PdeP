@@ -1,0 +1,174 @@
+/* Parcial Lógico: Toy Story 2014 */
+/* BASE DE CONOCIMIENTO */
+% dueño(Dueño, NombreJuguete, AñosQueLoTuvo).
+dueño(andy, woody, 8).
+dueño(sam, jessie, 3).
+
+% juguete(Nombre, Forma)
+% los juguetes son de la forma:
+% deTrapo(tematica)
+% deAccion(tematica, partes)
+% miniFiguras(tematica, cantidadDeFiguras)
+% caraDePapa(partes)
+juguete(woody, deTrapo(vaquero)).
+juguete(jessie, deTrapo(vaquero))
+juguete(buzz, deAccion(espacial, [original(casco)]).
+juguete(soldados, miniFiguras(soldado, 60)).
+juguete(monitosEnBarril, miniFiguras(mono, 50)).
+juguete(señorCaraDePapa, caraDePapa([ original(pieIzquierdo), original(pieDerecho), repuesto(nariz) ])).
+
+% Dice si un juguete es raro
+esRaro(deAccion(stacyMalibu, 1, [sombrero])).
+
+% Dice si una persona es coleccionista
+esColeccionista(sam).
+
+% juguete -> functor
+% nombre del juguete -> atomo 
+
+% 1:
+% a-
+% tematica(Juguete, Tematica).
+tematica(deTrapo(Tematica), Tematica).
+tematica(deAccion(Tematica, _), Tematica).
+tematica(miniFiguras(Tematica, _), Tematica).
+tematica(caraDePapa(_), caraDePapa).
+
+% b-
+% esDePlastico(Juguete).
+esDePlastico(Juguete) :- esMiniFigura(Juguete).
+esDePlastico(Juguete) :- esCaraDePapa(Juguete).
+
+esMiniFigura(miniFiguras(_, _)).
+esCaraDePapa(caraDePapa(_)).
+esDeAccion(deAccion(_, _, _)).
+
+% c-
+% esDeColeccion(Juguete).
+esDeColeccion(Juguete) :- 
+    esDeTrapo(Juguete).
+
+esDeColeccion(Juguete) :-
+    esCaraDePapaOAccion(Juguete),
+    esRaro(Juguete).
+
+esDeTrapo(deTrapo(_)).
+esCaraDePapaOAccion(Juguete) :- esCaraDePapa(Juguete).
+esCaraDePapaOAccion(Juguete) :- esDeAccion(Juguete).
+
+% 3:
+% superValioso(NombreJuguete).
+superValioso(NombreJuguete) :-
+    juguete(NombreJuguete, Forma),
+    esDeColeccion(Forma),
+    esColeccionista(Dueño),
+    not(posee(Dueño, NombreDeJuguete)),
+    tieneTodasPiezasOriginales(Forma).
+
+tieneTodasPiezasOriginales(Forma) :- 
+    piezas(Forma, Piezas),
+    forall(member(Pieza, Piezas), esOriginal(Pieza)).
+
+piezas(deAccion(_, Piezas), Piezas).
+piezas(caraDePapa(Piezas), Piezas).
+
+esOriginal(original(_)).
+
+% 4:
+% duoDinamico(Dueño, NombreJuguete, OtroNombreJuguete).
+duoDinamico(Dueño, NombreJuguete, OtroNombreJuguete) :-
+    posee(Dueño, NombreJuguete),
+    posee(Dueño, OtroNombreJuguete),
+    juguete(NombreJuguete, FormaJuguete),
+    juguete(OtroNombreJuguete, OtraFormaJuguete),
+    tematica(FormaJuguete, Tematica),
+    tematica(OtraFormaJuguete, Tematica).
+
+duoDinamico(Dueño, buzz, woody) :-
+    posee(Dueño, buzz),
+    posee(Dueño, woody).
+
+posee(Dueño, Juguete) :- dueño(Dueño, Juguete, _).
+
+% 5:
+% felicidad(Dueño, CantidadFelicidad).
+felicidad(Dueño, CantidadFelicidad) :-
+    esDueño(Dueño),
+    findall(Felicidad, felicidadDeCadaJuguete(Dueño, Felicidad), Felicidades),
+    sumlist(Felicidades, CantidadFelicidad).
+
+esDueño(Dueño) :- posee(Dueño, _).
+
+felicidadDeCadaJuguete(Dueño, Felicidad) :-
+    posee(Dueño, Juguete),
+    felicidadSegun(Juguete, Felicidad).
+
+felicidadSegun(deTrapo(_), 100).
+felicidadSegun(miniFiguras(_, CantidadDeFiguras), Felicidad) :- 
+    Felicidad is 20 * CantidadDeFiguras.
+
+felicidadSegun(caraDePapa(Partes), Felicidad) :-
+    findall(Cuanto, felicidadSegunPieza(Cuanto, Partes), Total),
+    sumlist(Total, Felicidad).
+
+felicidadSegun(Juguete, Felicidad) :-
+    esDeAccion(Juguete),
+    felicidadSegunColeccion(Juguete, Felicidad).
+
+felicidadSegunColeccion(Juguete, 120) :-
+    esDeColeccion(Juguete),
+    dueñoColeccionista(Juguete).
+
+dueñoColeccionista(Juguete) :-
+    juguete(Nombre, Juguete),
+    posee(Dueño, Nombre),
+    esColeccionista(Dueño).
+
+felicidadSegunColeccion(Juguete, 100) :-
+    not(esDeColeccion(Juguete)),
+    not(dueñoColeccionista(Juguete)).
+
+felicidadSegunPieza(Felicidad, Partes) :-
+    member(Pieza, Partes),
+    felicidadPieza(Pieza, Felicidad).
+
+felicidadPieza(original(_), 5).
+felicidadPieza(repuesto(_), 8).
+
+
+
+% 6:
+% puedeJugarCon(Alguien, NombreDeJuguete).
+puedeJugarCon(Alguien, NombreDeJuguete) :-
+    posee(Alguien, NombreDeJuguete).
+
+puedeJugarCon(Alguien, NombreDeJuguete) :-
+    puedePrestar(Alguien, Otro),
+    puedeJugarCon(Otro, Alguien).
+
+puedePrestar(Alguien, Otro) :-
+    cantidadJuguetes(Alguien, CantidadDeAlguien),
+    cantidadJuguetes(Otro, CantidadDeOtro),
+    CantidadDeAlguien > CantidadDeOtro.
+
+cantidadJuguetes(Alguien, Cantidad) :-
+    esDueño(Dueño),
+    findall(Juguete, posee(Dueño, Juguete), Juguetes),
+    length(Juguetes, Cantidad).
+
+% 7:
+% podriaDonar(Dueño, Juguetes, CantidadFelicidad).
+podriaDonar(Dueño, PosiblesJuguetes, CantidadFelicidad) :-
+    esDueño(Dueño),
+    findall(Juguete, posee(Dueño, Juguete), Juguetes),
+    posiblesJuguetesADonar(CantidadFelicidad, Juguetes, PosiblesJuguetes).
+
+posiblesJuguetesADonar(_, [], []).
+posiblesJuguetesADonar(Felicidad, [Juguete | Juguetes], [Posible | Posibles]) :-
+    felicidadSegun(Juguete, FelicidadDeJuguete), 
+    FelicidadDeJuguete < Felicidad,
+    RestoFelicidad is Felicidad - FelicidadDeJuguete,
+    posiblesJuguetesADonar(RestoFelicidad, Juguetes, Posibles).
+
+posiblesJuguetesADonar(Felicidad, [_ | Juguetes], PosiblesJuguetes) :-
+    posiblesJuguetesADonar(Felicidad, Juguetes, PosiblesJuguetes).

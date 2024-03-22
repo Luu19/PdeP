@@ -1,0 +1,148 @@
+/* Parcial Logico : Pulp Fiction 2015 */
+
+/* BASE DE CONOCIMIENTO */
+
+personaje(pumkin, ladron([licorerias, estacionesDeServicio])).
+personaje(honeyBunny, ladron([licorerias, estacionesDeServicio])).
+personaje(vincent, mafioso(maton)).
+personaje(jules, mafioso(maton)).
+personaje(marsellus, mafioso(capo)).
+personaje(winston, mafioso(resuelveProblemas)).
+personaje(mia, actriz([foxForceFive])).
+personaje(butch, boxeador).
+pareja(marsellus, mia).
+pareja(pumkin, honeyBunny).
+
+%trabajaPara(Empleador, Empleado)
+trabajaPara(marsellus, vincent).
+trabajaPara(marsellus, jules).
+trabajaPara(marsellus, winston).
+
+% amigo(Personaje, PersonajeAmigo).
+amigo(vincent, jules).
+amigo(jules, jimmie).
+amigo(vincent, elVendedor).
+
+% 1:
+% esPeligroso(Personaje).
+esPeligroso(Personaje) :-
+    realizaActividadPeligrosa(Personaje).
+esPeligroso(Personaje) :-
+    tieneEmpleadosPeligrosos(Personaje).
+
+tieneEmpleadosPeligrosos(Personaje) :-
+    trabajaPara(Personaje, Empleado),
+    esPeligroso(Empleado).
+
+realizaActividadPeligrosa(Personaje) :-
+    personaje(Personaje, Actividad),
+    esActividadPeligrosa(Actividad).
+
+esActividadPeligrosa(mafioso(maton)).
+esActividadPeligrosa(ladron(Lugares)) :- member(licorerias, Lugares).
+
+% 2:
+% duoTemible(Personaje1, Personaje2).
+duoTemible(Personaje, OtroPersonaje) :-
+    esPeligroso(Personaje),
+    esPeligroso(OtroPersonaje),
+    sonAlgo(Personaje, OtroPersonaje).
+
+sonAlgo(Personaje, OtroPersonaje) :- amigo(Personaje, OtroPersonaje).
+sonAlgo(Personaje, OtroPersonaje) :- amigo(OtroPersonaje, Personaje).
+sonAlgo(Personaje, OtroPersonaje) :- pareja(Personaje, OtroPersonaje).
+sonAlgo(Personaje, OtroPersonaje) :- pareja(OtroPersonaje, Personaje).
+
+% 3:
+/* BASE DE CONOCIMIENTO */
+%encargo(Solicitante, Encargado, Tarea).
+%las tareas pueden ser cuidar(Protegido), ayudar(Ayudado), buscar(Buscado, Lugar)
+encargo(marsellus, vincent, cuidar(mia)).
+encargo(vincent, elVendedor, cuidar(mia)).
+encargo(marsellus, winston, ayudar(jules)).
+encargo(marsellus, winston, ayudar(vincent)).
+encargo(marsellus, vincent, buscar(butch, losAngeles)).
+
+% estaEnProblemas(Personaje).
+estaEnProblemas(Personaje) :-
+    trabajaPara(Jefe, Personaje),
+    esPeligroso(Jefe),
+    pareja(Jefe, Pareja),
+    encargo(Jefe, Personaje, Encargo),
+    cuidarA(Encargo, Pareja).
+
+estaEnProblemas(Personaje) :-
+    encargo(_, Personaje, Encargo),
+    irABuscar(Encargo, Alguien),
+    esBoxeador(Alguien).
+
+esBoxeador(Personaje) :-
+    personaje(Personaje, boxeador).
+
+estaEnProblemas(butch).
+
+irABuscar(buscar(Alguien, _), Alguien).
+cuidarA(cuidar(Alguien), Alguien).
+
+% 4:
+% sanCayetano(Personaje).
+sanCayetano(Persona) :-
+    personaje(Persona, _),
+    forall(tieneCerca(Persona, OtraPersona), encargo(Persona, OtraPersona, _)).
+
+tieneCerca(Persona, OtraPersona) :- amigo(Persona, OtraPersona).
+tieneCerca(Persona, OtraPersona) :- amigo(OtraPersona, Persona).
+tieneCerca(Persona, OtraPersona) :- trabajaPara(Persona, OtraPersona).
+
+% 5:
+% masAtareado(Personaje).
+masAtareado(Personaje) :-
+    encargo(_, Personaje, _),
+    encargo(Personaje, CantidadMaxima),
+    forall((encargo(Otro, Cantidad), Otro \=Personaje), Cantidad < CantidadMaxima).
+
+encargo(Personaje, CantidadMaxima) :-
+    encargo(_, Personaje, _),
+    findall(Encargo, encargo(_, Personaje, Encargo), Encargos),
+    length(Encargos, CantidadMaxima).
+
+% 6:
+personajesRespetables(Personajes) :-
+    findall(Personaje, esRespetable(Personaje), Personajes).
+
+esRespetable(Personaje) :- 
+    respeto(Personaje, Respeto),
+    Respeto > 9.
+
+respeto(Personaje, Respeto) :-
+    personaje(Personaje, actriz(Peliculas)),
+    length(Peliculas, R),
+    Respeto is R / 10.
+
+respeto(Personaje, 10) :- personaje(Personaje, mafioso(resuelveProblemas)).
+respeto(Personaje, 1) :- personaje(Personaje, mafioso(maton)).
+respeto(Personaje, 20) :- personaje(Personaje, mafioso(capo)).
+
+% 7:
+hartoDe(Personaje, OtroPersonaje) :-
+    personaje(Personaje, _),
+    personaje(OtroPersonaje, _),
+    forall(encargo(_, Personaje, Tarea), interactua(OtroPersonaje, Tarea)).
+
+interactua(OtroPersonaje, cuidar(OtroPersonaje)).
+interactua(OtroPersonaje, ayudar(OtroPersonaje)).
+interactua(OtroPersonaje, buscar(OtroPersonaje, _)).
+interactua(OtroPersonaje, cuidar(Amigo)) :- amigo(OtroPersonaje, Amigo).
+interactua(OtroPersonaje, ayudar(Amigo)) :- amigo(OtroPersonaje, Amigo).
+interactua(OtroPersonaje, buscar(Amigo, _)) :- amigo(OtroPersonaje, Amigo).
+
+% 8:
+duoDiferenciable(Personaje, OtroPersonaje) :-
+    sonAlgo(Personaje, OtroPersonaje),
+    seDiferencian(Personaje, OtroPersonaje).
+
+seDiferencian(Personaje, OtroPersonaje) :-
+    caracteristicas(Personaje, CaractPersonaje),
+    caracteristicas(OtroPersonaje, OtrasCaract),
+    member(Caract, CaractPersonaje),
+    not(member(Caract, OtrasCaract)).

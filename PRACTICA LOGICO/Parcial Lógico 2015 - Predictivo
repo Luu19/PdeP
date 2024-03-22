@@ -1,0 +1,149 @@
+/* Parcial Logico: Predictivo 2015 */
+
+/* BASE DE CONOCIMIENTO */
+% mensaje(ListaDePalabras, Receptor).
+% Los receptores posibles son:
+% Persona: un simple átomo con el nombre de la persona; ó
+% Grupo: una lista de al menos 2 nombres de personas que pertenecen al grupo.
+mensaje(['hola', ',', 'qué', 'onda', '?'], nico).
+mensaje(['todo', 'bien', 'dsp', 'hablamos'], nico).
+mensaje(['q', 'parcial', 'vamos', 'a', 'tomar', '?'], [nico, lucas, maiu]).
+mensaje(['todo', 'bn', 'dsp', 'hablamos'], [nico, lucas, maiu]).
+mensaje(['todo', 'bien', 'después', 'hablamos'], mama).
+mensaje(['¿','y','q', 'onda', 'el','parcial', '?'], nico).
+mensaje(['¿','y','qué', 'onda', 'el','parcial', '?'], lucas).
+
+% abreviatura(Abreviatura, PalabraCompleta) relaciona una abreviatura con su significado.
+abreviatura('dsp', 'después').
+abreviatura('q', 'que').
+abreviatura('q', 'qué').
+abreviatura('bn', 'bien').
+
+% signo(UnaPalabra) indica si una palabra es un signo.
+signo('¿'). 
+signo('?'). 
+signo('.'). 
+signo(',').
+
+% filtro(Contacto, Filtro) define un criterio a aplicar para las predicciones para un contacto
+filtro(nico, masDe(0.5)).
+filtro(nico, ignorar(['interestelar'])).
+filtro(lucas, masDe(0.7)).
+filtro(lucas, soloFormal).
+filtro(mama, ignorar(['dsp','paja'])).
+
+% 1:
+% recibioMensaje(Persona, ListaDePalabras).
+recibioMensaje(Persona, Mensaje) :- 
+    mensaje(Mensaje, Persona). % De forma individual.
+
+recibioMensaje(Persona, Mensaje) :- 
+    mensaje(Mensaje, Grupo),
+    member(Persona, Grupo).
+
+% 2:
+% demasiadoFormal(ListaDePalabras).
+demasiadoFormal(Mensaje) :-
+    not(tieneAbreviatura(Mensaje)),
+    requisitosDeFormalidad(Mensaje).
+
+requisitosDeFormalidad(Mensaje) :- 
+    largoMensaje(Mensaje, Largo),
+    Largo > 20,
+    tieneSignos(Mensaje).
+
+requisitosDeFormalidad(['¿'|Mensaje]).
+
+tieneSignos(Mensaje) :-
+    signo(Signo),
+    member(Signo, Mensaje).
+
+tieneAbreviatura(Mensaje) :- 
+    abreviatura(Abreviatura),
+    member(Abreviatura, Mensaje).
+
+largoMensaje(Mensaje, Largo) :-
+     length(Mensaje, Largo).
+
+% 3:
+% esAceptable(Palabra, Persona).
+esAceptable(Palabra, Persona) :-
+    esPersona(Persona),
+    esPalabra(Palabra),
+    forall(filtro(Persona, Filtro), pasaFiltro(Palabra, Filtro, Persona)).
+
+pasaFiltro(Palabra, masDe(N), Persona) :- 
+    tasaDeUso(Persona, Palabra, Tasa),
+    Tasa > N.
+
+pasaFiltro(Palabra, ignorar(ListaDePalabras), _) :-
+    not(member(Palabra, ListaDePalabras)).
+
+pasaFiltro(Palabra, soloFormal, Persona) :-
+    recibioMensaje(Persona, Mensaje),
+    demasiadoFormal(Mensaje),
+    member(Palabra, Mensaje).
+
+tasaDeUso(Persona, Palabra, TasaDeUso) :-
+    esPersona(Persona),
+    esPalabra(Palabra),
+    usoPalabra(Palabra, Persona, Cantidad),
+    Alguien \= Persona,
+    usoPalabra(Palabra, Alguien, Cantidad2)
+    TasaDeUso is Cantidad / Cantidad2.
+
+usoPalabra(Palabra, Persona, Cantidad) :-
+    findall(1, (recibioMensaje(Persona, Mensaje), member(Palabra, Mensaje)), Cantidad).
+
+esPersona(P) :- recibioMensaje(P, _).
+esPalabra(P) :- abreviatura(_, P).
+esPalabra(P) :- member(P, Mensaje), esMensaje(Mensaje).
+esMensaje(M) :- mensaje(Mensaje, _).
+
+% 4:
+% dicenLoMismo(Mensaje1, Mensaje2).
+dicenLoMismo(Mensaje1, Mensaje2) :-
+    tienenMismoOrdenYSonEquiv(Mensaje1, Mensaje2).
+
+tienenMismoOrdenYSonEquiv(Mensaje, Mensaje1) :-
+    esMensaje(Mensaje),
+    esMensaje(Mensaje1),
+    forall(palabraEnAmbos(Palabra, Mensaje, Mensaje1), (nth1(Pos, Palabra, Mensaje), nth1(Pos, Palabra, Mensaje1)))
+
+palabraEnAmbos(Palabra, M, M1) :-
+    estaPalabraOAbreviatura(Palabra, M),
+    estaPalabraOAbreviatura(Palabra, M1).
+
+estaPalabraOAbreviatura(Palabra, Mensaje) :- 
+    member(Palabra, Mensaje).
+
+estaPalabraOAbreviatura(Palabra, Mensaje) :-
+    abreviatura(Palabra, Abreviatura),
+    member(Abreviatura, Mensaje).
+
+% 5:
+% fraseCelebre(ListaDePalabras).
+fraseCelebre(Frase) :-
+    esMensaje(Frase),
+    contactos(Contactos),
+    forall(member(Persona, Contactos), recibioMensaje(Frase, Persona)).
+
+contactos(Contactos) :-
+    forall(member(Persona, Contactos), recibioMensaje(Persona, _)).
+
+% 6:
+% prediccion(MensajeAEnviar, Receptor, Prediccion). Prediccion -> Palabra para continuar mensaje
+prediccion(Mensaje, Receptor, Prediccion) :-
+    not(fraseCelebre(Mensaje)),
+    esPrediccionAceptable(Receptor, Prediccion).
+
+esPrediccionAceptable(Grupo, Prediccion) :-
+    esPalabra(Prediccion),
+    esGrupo(Grupo),
+    forall(member(Persona, Grupo), esAceptable(Prediccion, Persona)).
+
+esPrediccionAceptable(Persona, Prediccion) :-
+    esAceptable(Prediccion, Persona).
+
+esGrupo(Grupo) :- recibioMensaje(_, Grupo).
+

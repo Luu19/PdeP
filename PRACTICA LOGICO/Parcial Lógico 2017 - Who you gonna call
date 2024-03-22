@@ -1,0 +1,83 @@
+/* Parcial Lógico: Who you gonna call? 2017 */
+/* BASE DE CONOCIMIENTO */
+cazafantasma(peter).
+cazafantasma(ergon).
+cazafantasma(ray).
+cazafantasma(winston).
+
+% herramientasRequeridas(Tarea, Herramientas).
+herramientasRequeridas(ordenarCuarto, [aspiradora(100), trapeador, plumero]).
+herramientasRequeridas(limpiarTecho, [escoba, pala]).
+herramientasRequeridas(cortarPasto, [bordedadora]).
+herramientasRequeridas(limpiarBanio, [sopapa, trapeador]).
+herramientasRequeridas(encerarPisos, [lustradpesora, cera, aspiradora(300)]).
+
+% 1:
+tiene(ergon, aspiradora(200)).
+tiene(ergon, trapeador).
+tiene(peter, trapeador).
+tiene(winston, varitaDeNeutrones).
+
+% 2:
+% satisfaceNecesidad(Integrande, Herramienta).
+satisfaceNecesidad(Integrande, Herramienta) :-
+    tiene(Integrande, Herramienta).
+
+satisfaceNecesidad(Integrande, aspiradora(Potencia)) :-
+    tiene(Integrande, aspiradora(OtraPotencia)),
+    OtraPotencia >= Potencia.
+
+% 3:
+% puedeRealizarTarea(Persona, Tarea).
+puedeRealizarTarea(Persona, Tarea) :-
+    cazafantasma(Persona),
+    herramientasRequeridas(Tarea, Herramientas),
+    forall(member(Herramienta, Herramientas), satisfaceNecesidad(Persona, Herramienta)).
+
+puedeRealizarTarea(Persona, Tarea) :-
+    tiene(Persona, varitaDeNeutrones),
+    esTarea(Tarea).
+
+esTarea(T) :- herramientasRequeridas(T, _).
+
+% 4:
+% cobrar(Cliente, Cobro).
+cobrar(Cliente, Cobro) :-
+    tareaPedida(Cliente, _, _),
+    findall(Precio, precioPorTarea(Cliente, Precio), Precios),
+    sumlist(Precios).
+
+precioPorTarea(Cliente, Precio) :-
+    tareaPedida(Cliente, Tarea, MetrosCuadrados),
+    precio(Tarea, PrecioXMetro),
+    Precio is PrecioXMetro * MetrosCuadrados.
+
+% 5:
+% aceptaPedido(Persona, Cliente).
+aceptaPedido(Persona, Cliente) :-
+    puedeRealizarTodasLasTareas(Persona, Cliente),
+    estaDispuesto(Persona, Cliente).
+
+puedeRealizarTodasLasTareas(Persona, Cliente) :-
+    cazafantasma(Persona),
+    tareaPedida(Cliente, _, _), 
+    forall(tareaPedida(Cliente, Tarea, _), puedeRealizarTarea(Persona, Tarea)).
+
+estaDispuesto(ray, Cliente) :-
+    not(tareaPedida(Cliente, limpiarTecho, _)).
+
+estaDispuesto(winston, Cliente) :-
+    cobrar(Cliente, Cuanto),
+    Cuanto > 500.
+
+estaDispuesto(ergon, Cliente) :-
+    tareaPedida(Cliente, Tarea, _),
+    not(esCompleja(Tarea)).
+
+estaDispuesto(peter, Cliente) :- tareaPedida(Cliente, _, _).
+
+esCompleja(limpiarTecho).
+esCompleja(Tarea) :- 
+    herramientasRequeridas(Tarea, Herramientas), 
+    length(Herramientas, Largo),
+    Largo > 2.
