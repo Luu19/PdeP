@@ -5,7 +5,7 @@ contiene **parciales de práctica y apuntes** hechos por mí y **TPs de la cáte
 
 > Si tienes alguna pregunta|duda|sugerencia, no dudes en abrir un Issue en el repositorio o ponerte en contacto conmigo!
 
-La cursada fue con la cátedra de Fede Scarpa, Feli Calvo y Juli (reyes 👑)
+La cursada fue con la cátedra de Fede Scarpa, Feli Calvo y Juli Berbel Alt (reyes 👑)
 
 ## Descripción del Repo
 Tenemos:
