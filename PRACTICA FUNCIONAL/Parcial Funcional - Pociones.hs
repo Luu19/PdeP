@@ -40,16 +40,10 @@ diferenciaDeNiveles :: Persona -> Int
 diferenciaDeNiveles persona = nivelMasAlto persona - nivelMasBajo persona
 
 nivelMasAlto :: Persona -> Int
-nivelMasAlto persona 
-    | suerte persona > inteligencia persona && suerte persona > fuerza persona          = suerte persona
-    | inteligencia persona > suerte persona && inteligencia persona > fuerza persona    = inteligencia persona
-    | otherwise                                                                         = fuerza persona
+nivelMasAlto persona = maximum [suerte persona, inteligencia persona, fuerza persona]
 
 nivelMasBajo :: Persona -> Int
-nivelMasBajo persona 
-    | suerte persona < inteligencia persona && suerte persona < fuerza persona          = suerte persona
-    | inteligencia persona < suerte persona && inteligencia persona < fuerza persona    = inteligencia persona
-    | otherwise                                                                         = fuerza persona
+nivelMasBajo persona = minimum [suerte persona, inteligencia persona, fuerza persona]
 
 --c.
 nivelesMayoresA :: Int -> Persona -> Int
