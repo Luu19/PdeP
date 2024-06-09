@@ -95,7 +95,7 @@ mayorSegun f a b
 
 -- *
 elElegido :: [Vigilante] -> String
-elElegido vigilantes = take 1 . habilidades . maximoSegun (length . nombre) . guerraVietnam $ vigilantes
+elElegido vigilantes = head . habilidades . maximoSegun (length . nombre) . guerraVietnam $ vigilantes
 
 -- *
 patriarca :: [Vigilante] -> String
